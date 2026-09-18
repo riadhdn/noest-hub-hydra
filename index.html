@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>NOEST EXPRESS — Hub Hydra 3D</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://unpkg.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@1,800&family=Sora:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.170.0/build/three.module.js" } }
+  </script>
+  <style>
+    :root {
+      --navy: #003060; --red: #a81018; --paper: #fff6e0; --ink: #161616;
+      --font-ui: "Sora", sans-serif; --font-display: "Barlow Condensed", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1016; color: #fff; font-family: var(--font-ui); }
+    #view { position: fixed; inset: 0; }
+    .cross { position: fixed; left: 50%; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; pointer-events: none; z-index: 2; opacity: .55; }
+    .cross::before, .cross::after { content: ""; position: absolute; background: #fff; }
+    .cross::before { left: 5px; top: 0; width: 2px; height: 12px; }
+    .cross::after { left: 0; top: 5px; width: 12px; height: 2px; }
+    .hud { position: fixed; inset: 0; pointer-events: none; z-index: 3; }
+    .hud > * { pointer-events: auto; }
+    .top {
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+      padding: 10px 14px; background: linear-gradient(180deg, rgba(0,0,0,.62), transparent);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .mark {
+      width: 34px; height: 34px; border-radius: 8px; background: #fff;
+      color: var(--navy); display: grid; place-items: center;
+      font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 1.15rem;
+    }
+    .brand b { font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; }
+    .roles { display: flex; gap: 6px; flex-wrap: wrap; }
+    .roles button, .icon-btn {
+      border: 0; border-radius: 999px; padding: 8px 12px; font: inherit; font-weight: 700;
+      background: rgba(255,255,255,.14); color: #fff; cursor: pointer;
+    }
+    .roles button.on { background: #fff; color: var(--navy); }
+    .roles button.play { background: var(--red); }
+    button:focus-visible { outline: 3px solid #7ec2ff; outline-offset: 2px; }
+    .quest {
+      position: absolute; left: 14px; top: 58px; max-width: min(380px, 74vw);
+      background: rgba(0,16,32,.68); border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px; padding: 8px 10px; pointer-events: none;
+    }
+    .quest small { letter-spacing: .14em; text-transform: uppercase; opacity: .65; font-size: .64rem; }
+    .quest p { margin: 4px 0 0; font-size: .9rem; line-height: 1.35; }
+    .cast {
+      position: absolute; left: 14px; top: 148px; display: flex; flex-direction: column; gap: 6px;
+      pointer-events: none;
+    }
+    .cast span {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(0,16,32,.62); border: 1px solid rgba(255,255,255,.1);
+      border-radius: 999px; padding: 4px 10px; font-size: .72rem; font-weight: 600;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #7a8794; }
+    .cast span.wait .dot { background: #e8c14a; }
+    .cast span.serve .dot { background: #4cc38a; }
+    .cast span.done .dot { background: #8ab4d4; }
+    .sub {
+      position: absolute; left: 50%; bottom: 92px; transform: translateX(-50%);
+      background: rgba(0,16,32,.78); border: 1px solid rgba(255,255,255,.15);
+      border-radius: 12px; padding: 8px 14px; font-weight: 600; max-width: 80vw; text-align: center;
+      pointer-events: none;
+    }
+    .bottom { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; justify-content: space-between; align-items: flex-end; }
+    .pad { display: grid; grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(3, 44px); gap: 4px; }
+    .pad button { border: 0; border-radius: 10px; background: rgba(255,255,255,.16); color: #fff; font-weight: 800; }
+    .pad .e { grid-column: 2; grid-row: 2; background: #fff; color: var(--navy); }
+    .pad .u { grid-column: 2; grid-row: 1; } .pad .d { grid-column: 2; grid-row: 3; }
+    .pad .l { grid-column: 1; grid-row: 2; } .pad .r { grid-column: 3; grid-row: 2; }
+    .hint { font-size: .72rem; opacity: .75; text-align: right; max-width: 34ch; }
+    .how { position: fixed; inset: 0; background: rgba(6,10,16,.58); display: grid; place-items: center; padding: 16px; z-index: 6; }
+    .how[hidden] { display: none !important; }
+    .card { width: min(480px, 100%); background: #fff; color: var(--ink); border-radius: 20px; padding: 22px; }
+    .card h2 { margin: 0 0 8px; font-family: var(--font-display); font-style: italic; font-size: 2rem; color: var(--navy); }
+    .card p { margin: 0 0 12px; color: #555; line-height: 1.45; }
+    .go { width: 100%; min-height: 52px; border: 0; border-radius: 14px; background: var(--navy); color: #fff; font-weight: 800; cursor: pointer; }
+    .chip { border: 1px solid #ddd; background: #f4f4f4; border-radius: 999px; padding: 8px 12px; font: inherit; font-weight: 600; cursor: pointer; width: 100%; margin-top: 8px; }
+    .how ol { margin: 0 0 14px; padding-left: 1.15em; color: #333; line-height: 1.5; }
+    .toast {
+      position: fixed; left: 50%; top: 72px; transform: translateX(-50%);
+      background: #fff; color: var(--navy); padding: 8px 12px; border-radius: 10px; font-weight: 700;
+      opacity: 0; pointer-events: none; transition: .25s; z-index: 7;
+    }
+    .toast.show { opacity: 1; }
+    .tv-hud {
+      position: absolute; right: 14px; top: 58px; width: min(360px, 42vw);
+      background: #0c1420; border: 2px solid #2a3a4c; border-radius: 14px;
+      padding: 7px 7px 8px; pointer-events: none; z-index: 5;
+      box-shadow: 0 16px 40px rgba(0,0,0,.45);
+    }
+    .tv-hud small {
+      display: block; color: #ff6b6b; letter-spacing: .16em; text-transform: uppercase;
+      font-size: .58rem; font-weight: 700; padding: 1px 6px 5px;
+    }
+    .tv-hud canvas { width: 100%; height: auto; display: block; border-radius: 8px; background: #f4f6f8; }
+    .tv-hud.flash { outline: 3px solid #a81018; }
+    @media (min-width: 900px) { .pad { opacity: .28; } .pad:hover { opacity: 1; } }
+  </style>
+</head>
+<body>
+  <div id="view"></div>
+  <div class="cross" aria-hidden="true"></div>
+  <div class="hud">
+    <header class="top">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">N</div>
+        <b>Hub Hydra · stopdesk live</b>
+      </div>
+      <div class="roles">
+        <button type="button" id="playBtn" class="play">▶ Scénario 3 clients</button>
+        <button type="button" data-who="free" class="on">Libre</button>
+        <button type="button" class="icon-btn" id="helpBtn">?</button>
+      </div>
+    </header>
+    <div class="quest"><small>En cours</small><p id="quest">Lancez le scénario : 3 clients vivent toute la file.</p></div>
+    <div class="cast" id="cast"></div>
+    <aside class="tv-hud" id="tvHudWrap" aria-label="Écran d'appel public">
+      <small>TV salle d’attente · appel en cours</small>
+      <canvas id="tvHud" width="1024" height="512"></canvas>
+    </aside>
+    <div class="sub" id="sub">NOEST EXPRESS — Hydra</div>
+    <div class="bottom">
+      <div class="pad" id="pad">
+        <button class="u" data-dir="up" type="button">▲</button>
+        <button class="l" data-dir="left" type="button">◀</button>
+        <button class="e" id="actPad" type="button">E</button>
+        <button class="r" data-dir="right" type="button">▶</button>
+        <button class="d" data-dir="down" type="button">▼</button>
+      </div>
+      <p class="hint">Clic-glisser pour regarder · WASD pour marcher · le scénario se joue tout seul</p>
+    </div>
+  </div>
+  <div class="how" id="how">
+    <div class="card">
+      <h2>Matinée au hub Hydra</h2>
+      <p>Stopdesk type NOEST : vitrine sur rue, borne, file, trois guichets vitrés, stock derrière. Trois clients vivent toute la chaîne.</p>
+      <ol>
+        <li>Ils prennent un ticket à la borne.</li>
+        <li>La TV de la salle affiche le ticket et le guichet.</li>
+        <li>L’agent va chercher le colis à l’emplacement, le dépose, le client sort.</li>
+      </ol>
+      <button class="go" id="startBtn" type="button">Lancer le scénario</button>
+      <button class="chip" id="freeBtn" type="button">Explorer librement</button>
+      <a class="chip" href="proposition.html" style="display:block;text-align:center;text-decoration:none">عرض المشروع بالعربية</a>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script type="module">
+    import * as THREE from "three";
+
+    const CLIENTS = [
+      { id: "karim", name: "Karim Benali", place: "B-02", tracking: "NE24091801", shirt: 0x2d5a8a, pants: 0x1b1b1b },
+      { id: "amira", name: "Amira Saadi", place: "A-03", tracking: "NE24091811", shirt: 0xb42318, pants: 0x2a2430 },
+      { id: "nadia", name: "Nadia Cherif", place: "C-01", tracking: "NE24091821", shirt: 0x1b7a4c, pants: 0x243044 },
+    ];
+    const SHELVES = ["A-01","A-02","A-03","A-04","B-01","B-02","B-03","B-04","C-01","C-02","C-03","C-04"];
+    const CHAIRS = [
+      { x: 2.6, z: 1.35 }, { x: 3.8, z: 1.35 }, { x: 5.0, z: 1.35 },
+      { x: 2.6, z: 2.55 }, { x: 3.8, z: 2.55 }, { x: 5.0, z: 2.55 },
+    ];
+    const GUICHETS = [
+      { x: 3.6, z: -5.15, post: 1 },
+      { x: 6.9, z: -5.15, post: 2 },
+      { x: 10.2, z: -5.15, post: 3 },
+    ];
+
+    const keys = new Set();
+    const hold = { x: 0, z: 0 };
+    let yaw = 0, pitch = -0.06, lookDrag = false, last = 0;
+    let director = true, playing = false, focus = null;
+    const state = { tickets: [], serving: null, lastCall: null, delivered: null, served: 0, seq: 0 };
+    const shelfStock = {};
+    const shelfMeshes = {};
+    CLIENTS.forEach((c) => { shelfStock[c.place] = c; });
+
+    const view = document.getElementById("view");
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    view.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x8fb4cc);
+    scene.fog = new THREE.Fog(0x8fb4cc, 34, 62);
+    const camera = new THREE.PerspectiveCamera(66, innerWidth / innerHeight, 0.08, 90);
+    camera.position.set(8.05, 1.68, 13.4);
+    const colliders = [];
+    const tv = { canvas: null, ctx: null, tex: null };
+    const actors = {};
+
+    function toast(m) {
+      const el = document.getElementById("toast");
+      el.textContent = m; el.classList.add("show");
+      clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove("show"), 2200);
+    }
+    function say(m) {
+      document.getElementById("sub").textContent = m;
+      document.getElementById("quest").textContent = m;
+    }
+    function paintCast() {
+      const el = document.getElementById("cast");
+      el.innerHTML = CLIENTS.map((c) => {
+        const a = actors[c.id];
+        const t = a?.ticket;
+        let cls = "", label = "dans la rue";
+        if (t?.status === "waiting") { cls = "wait"; label = t.code + " · attend"; }
+        else if (t?.status === "serving") { cls = "serve"; label = t.code + " · guichet " + t.post; }
+        else if (t?.status === "done") { cls = "done"; label = t.code + " · servi"; }
+        return `<span class="${cls}"><i class="dot"></i>${c.name.split(" ")[0]} — ${label}</span>`;
+      }).join("");
+    }
+    function chime() {
+      try {
+        const ac = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.frequency.value = 880; g.gain.value = 0.05; o.connect(g); g.connect(ac.destination);
+        o.start(); o.stop(ac.currentTime + 0.14);
+      } catch {}
+    }
+    function speak(t) {
+      if (!speechSynthesis) return;
+      const u = new SpeechSynthesisUtterance(t); u.lang = "fr-FR"; u.rate = 0.95;
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+    }
+
+    function tex(draw, w = 256, h = 256, rx = 1, ry = 1) {
+      const c = document.createElement("canvas"); c.width = w; c.height = h;
+      draw(c.getContext("2d"), w, h);
+      const t = new THREE.CanvasTexture(c);
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(rx, ry);
+      t.anisotropy = 8;
+      return t;
+    }
+    function tileFloor() {
+      return tex((g, w, h) => {
+        g.fillStyle = "#b9b1a3"; g.fillRect(0, 0, w, h);
+        for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
+          g.fillStyle = (i + j) % 2 ? "#d8d0c2" : "#c8c0b2";
+          g.fillRect(i * 64 + 2, j * 64 + 2, 60, 60);
+          g.fillStyle = "rgba(255,255,255,.12)";
+          g.fillRect(i * 64 + 4, j * 64 + 4, 28, 8);
+        }
+      }, 256, 256, 10, 8);
+    }
+    function plaster() {
+      return tex((g, w, h) => {
+        g.fillStyle = "#efe4d2"; g.fillRect(0, 0, w, h);
+        for (let i = 0; i < 500; i++) {
+          g.fillStyle = `rgba(170,150,120,${Math.random() * 0.08})`;
+          g.fillRect(Math.random() * w, Math.random() * h, 3, 3);
+        }
+      }, 256, 256, 3, 2);
+    }
+    function asphalt() {
+      return tex((g, w, h) => {
+        g.fillStyle = "#3a3f46"; g.fillRect(0, 0, w, h);
+        for (let i = 0; i < 900; i++) {
+          g.fillStyle = `rgba(255,255,255,${Math.random() * 0.05})`;
+          g.fillRect(Math.random() * w, Math.random() * h, 2, 2);
+        }
+        g.fillStyle = "#d8c24a";
+        for (let x = 20; x < w; x += 48) g.fillRect(x, h / 2 - 4, 26, 8);
+      }, 256, 256, 10, 3);
+    }
+    function sidewalk() {
+      return tex((g, w, h) => {
+        g.fillStyle = "#9a958c"; g.fillRect(0, 0, w, h);
+        g.strokeStyle = "#7f7a72"; g.lineWidth = 2;
+        for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) g.strokeRect(i * 64, j * 64, 64, 64);
+      }, 256, 256, 8, 2);
+    }
+    function cardboard() {
+      return tex((g, w, h) => {
+        g.fillStyle = "#c49a62"; g.fillRect(0, 0, w, h);
+        g.strokeStyle = "#8a6230"; g.lineWidth = 8; g.strokeRect(14, 14, w - 28, h - 28);
+        g.fillStyle = "#fff8ee"; g.fillRect(64, 88, 128, 44);
+        g.fillStyle = "#003060"; g.font = "bold 24px sans-serif"; g.fillText("NOEST", 80, 118);
+      });
+    }
+    function metal() {
+      return tex((g, w, h) => {
+        const grd = g.createLinearGradient(0, 0, w, 0);
+        grd.addColorStop(0, "#8d939a"); grd.addColorStop(0.5, "#c5c9ce"); grd.addColorStop(1, "#7d838a");
+        g.fillStyle = grd; g.fillRect(0, 0, w, h);
+      });
+    }
+    function glassMat() {
+      return new THREE.MeshPhysicalMaterial({
+        color: 0xb7d7ea, transparent: true, opacity: 0.32, roughness: 0.05,
+        metalness: 0.1, transmission: 0.35, thickness: 0.04,
+      });
+    }
+    function label(text, w, h, bg, fg) {
+      const c = document.createElement("canvas"); c.width = 768; c.height = 160;
+      const g = c.getContext("2d");
+      g.fillStyle = bg; g.fillRect(0, 0, 768, 160);
+      g.fillStyle = fg; g.font = "800 58px Sora, sans-serif";
+      g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text, 384, 86);
+      const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+      return new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: t, transparent: true }));
+    }
+    function mat(color, extra = {}) {
+      return new THREE.MeshStandardMaterial({ color, roughness: 0.78, metalness: 0.04, ...extra });
+    }
+    function box(w, h, d, material, x, y, z, collide = true) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), typeof material === "number" ? mat(material) : material);
+      m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; scene.add(m);
+      if (collide) colliders.push({ minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2 });
+      return m;
+    }
+    function plant(x, z, s = 1) {
+      const pot = box(0.28 * s, 0.22 * s, 0.28 * s, 0x8a3a28, x, 0.11 * s, z, false);
+      pot.castShadow = true;
+      const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.28 * s, 10, 8), mat(0x2f7a3a));
+      leaf.position.set(x, 0.42 * s, z); leaf.scale.set(1, 1.15, 1); scene.add(leaf);
+    }
+    function lampPost(x, z) {
+      box(0.12, 3.4, 0.12, 0x2a2d32, x, 1.7, z, false);
+      const head = box(0.55, 0.12, 0.28, 0x1a1c20, x, 3.42, z - 0.12, false);
+      head.material.emissive = new THREE.Color(0x665522);
+      const light = new THREE.PointLight(0xffe6b0, 8, 10, 2);
+      light.position.set(x, 3.2, z); scene.add(light);
+    }
+
+    function human({ shirt, pants, vest, name }) {
+      const g = new THREE.Group();
+      const skin = mat(0xe8c4a0);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 14, 12), skin);
+      head.position.y = 1.58; g.add(head);
+      const hair = new THREE.Mesh(new THREE.SphereGeometry(0.165, 12, 10), mat(0x2a1c14));
+      hair.position.set(0, 1.66, -0.02); hair.scale.set(1, 0.55, 1); g.add(hair);
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.48, 0.22), mat(shirt));
+      torso.position.y = 1.18; g.add(torso);
+      if (vest) {
+        const v = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.4, 0.24), mat(vest));
+        v.position.y = 1.16; g.add(v);
+      }
+      const hips = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.22, 0.2), mat(pants));
+      hips.position.y = 0.82; g.add(hips);
+      ["L", "R"].forEach((side, i) => {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.14), mat(pants));
+        leg.position.set(i ? 0.1 : -0.1, 0.42, 0); g.add(leg);
+        const arm = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.46, 0.1), mat(shirt));
+        arm.position.set(i ? 0.26 : -0.26, 1.12, 0); g.add(arm);
+        const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.08, 0.22), mat(0x222));
+        shoe.position.set(i ? 0.1 : -0.1, 0.12, 0.03); g.add(shoe);
+      });
+      const tag = label(name.split(" ")[0], 0.42, 0.1, "#003060", "#fff");
+      tag.position.set(0, 1.86, 0); g.add(tag);
+      const parcel = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.2, 0.24), new THREE.MeshStandardMaterial({ map: cardboard() }));
+      parcel.position.set(0.28, 1.05, 0.16); parcel.visible = false; g.add(parcel);
+      const slip = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.16, 0.01), mat(0xfff6e0));
+      slip.position.set(-0.22, 1.05, 0.14); slip.visible = false; g.add(slip);
+      g.userData.parcel = parcel;
+      g.userData.slip = slip;
+      scene.add(g);
+      return g;
+    }
+
+    function buildWorld() {
+      scene.add(new THREE.HemisphereLight(0xd7e6f2, 0x6a5844, 0.55));
+      scene.add(new THREE.AmbientLight(0xcdd6de, 0.28));
+      const sun = new THREE.DirectionalLight(0xfff1d0, 0.95);
+      sun.position.set(8, 18, 16); sun.castShadow = true;
+      sun.shadow.mapSize.set(1024, 1024);
+      sun.shadow.camera.near = 2; sun.shadow.camera.far = 40;
+      sun.shadow.camera.left = -18; sun.shadow.camera.right = 18;
+      sun.shadow.camera.top = 14; sun.shadow.camera.bottom = -10;
+      scene.add(sun);
+
+      [[4.2, 2.92, 0.4], [9.4, 2.92, -2.2], [7.2, 2.92, 3.4], [-9.2, 2.92, -0.4]].forEach(([x, y, z]) => {
+        const l = new THREE.PointLight(0xffe8c4, 11, 12, 2); l.position.set(x, y, z); scene.add(l);
+        const panel = box(1.35, 0.04, 0.55, 0xf7f2d8, x, 3.04, z, false);
+        panel.material.emissive = new THREE.Color(0x887744);
+        panel.material.emissiveIntensity = 0.55;
+      });
+
+      const hall = new THREE.Mesh(new THREE.PlaneGeometry(18.8, 14.8), new THREE.MeshStandardMaterial({ map: tileFloor(), roughness: 0.88 }));
+      hall.rotation.x = -Math.PI / 2; hall.position.set(6.2, 0, 0); hall.receiveShadow = true; scene.add(hall);
+      const stockFl = new THREE.Mesh(new THREE.PlaneGeometry(11.6, 14.8), new THREE.MeshStandardMaterial({ color: 0x7d786e, roughness: 0.97 }));
+      stockFl.rotation.x = -Math.PI / 2; stockFl.position.set(-8.8, 0, 0); stockFl.receiveShadow = true; scene.add(stockFl);
+      box(5.6, 0.03, 1.2, 0x222, -8.8, 0.02, 0.1, false);
+      box(5.6, 0.02, 0.12, 0xe4c04a, -8.8, 0.035, -0.46, false);
+      box(5.6, 0.02, 0.12, 0xe4c04a, -8.8, 0.035, 0.66, false);
+
+      const street = new THREE.Mesh(new THREE.PlaneGeometry(52, 18), new THREE.MeshStandardMaterial({ map: asphalt(), roughness: 1 }));
+      street.rotation.x = -Math.PI / 2; street.position.set(2, -0.04, 16.4); scene.add(street);
+      const walk = new THREE.Mesh(new THREE.PlaneGeometry(28, 3.1), new THREE.MeshStandardMaterial({ map: sidewalk(), roughness: 0.95 }));
+      walk.rotation.x = -Math.PI / 2; walk.position.set(4, 0.01, 9.55); walk.receiveShadow = true; scene.add(walk);
+      box(28, 0.18, 0.22, 0x8a857c, 4, 0.08, 8.08, false);
+
+      const ceil = new THREE.Mesh(new THREE.PlaneGeometry(36, 16), mat(0xd8d0c2));
+      ceil.rotation.x = Math.PI / 2; ceil.position.set(1, 3.14, 0); scene.add(ceil);
+
+      const wallMat = new THREE.MeshStandardMaterial({ map: plaster(), roughness: 0.92 });
+      const dado = 0x0a3f6c;
+      function wall(w, h, d, x, y, z, collide = true) {
+        box(w, h, d, wallMat, x, y, z, collide);
+        box(w, 1.08, d + 0.02, dado, x, 0.54, z, false);
+        box(w, 0.05, d + 0.04, 0xa81018, x, 1.1, z, false);
+      }
+      wall(32, 3.16, 0.28, 1, 1.58, -7.22);
+      wall(7.0, 3.16, 0.28, 1.2, 1.58, 7.22);
+      wall(6.4, 3.16, 0.28, 12.7, 1.58, 7.22);
+      wall(8.8, 3.16, 0.28, -10.0, 1.58, 7.22);
+      wall(0.28, 3.16, 14.8, 15.35, 1.58, 0);
+      wall(0.28, 3.16, 14.8, -14.45, 1.58, 0);
+      wall(0.28, 3.16, 5.15, -3.05, 1.58, -4.45);
+      wall(0.28, 3.16, 5.45, -3.05, 1.58, 4.5);
+
+      const glass = glassMat();
+      [-0.9, 2.6, 10.55, 14.0].forEach((x) => {
+        box(3.15, 2.35, 0.05, glass, x, 1.52, 7.22, false);
+        box(3.2, 0.08, 0.1, 0x1c1c1c, x, 2.72, 7.24, false);
+        box(3.2, 0.08, 0.1, 0x1c1c1c, x, 0.36, 7.24, false);
+      });
+      box(0.12, 2.55, 0.14, 0x1a1a1a, 7.05, 1.32, 7.22, false);
+      box(0.12, 2.55, 0.14, 0x1a1a1a, 9.05, 1.32, 7.22, false);
+      box(2.05, 2.35, 0.04, glass, 8.05, 1.42, 7.18, false);
+      box(0.08, 2.2, 0.08, 0x333, 8.05, 1.2, 7.14, false);
+      box(1.95, 0.16, 1.1, 0x2a2a2a, 8.05, 0.03, 6.55, false);
+
+      box(16.4, 0.55, 0.42, 0x003060, 8.05, 2.92, 7.42, false);
+      box(16.4, 0.08, 0.44, 0xa81018, 8.05, 2.62, 7.42, false);
+      const fascia = label("NOEST EXPRESS   ·   STOPDESK HYDRA", 7.4, 0.36, "#003060", "#fff");
+      fascia.position.set(8.05, 2.94, 7.64); scene.add(fascia);
+      const hours = label("Dim–Jeu 08:30–18:00    Ven fermé", 3.2, 0.2, "#a81018", "#fff");
+      hours.position.set(2.55, 2.48, 7.38); scene.add(hours);
+      const open = label("OUVERT", 0.9, 0.18, "#1b7a4c", "#fff");
+      open.position.set(13.8, 2.48, 7.38); scene.add(open);
+
+      [[-10.5, 4.6, 19.2, 0x8a9098, "ATELIER"], [1.6, 5.4, 20.4, 0x6d7580, "PHARMACIE"], [14.6, 4.2, 19.6, 0x9aa3aa, "BOULANGERIE"]].forEach(([x, h, z, col, name]) => {
+        box(6.2, h, 3.4, col, x, h / 2, z, false);
+        for (let i = 0; i < 3; i++) box(0.7, 0.9, 0.06, 0xb7d0e0, x - 1.6 + i * 1.5, h * 0.55, z - 1.72, false);
+        const s = label(name, 2.4, 0.28, "#111", "#fff6e0");
+        s.position.set(x, h * 0.82, z - 1.74); scene.add(s);
+      });
+      lampPost(-4.2, 11.6); lampPost(12.8, 11.8);
+      plant(-5.4, 8.7, 1.15); plant(11.6, 8.55, 1.05);
+
+      box(4.6, 1.72, 1.95, 0x003060, -0.4, 0.88, 13.15, false);
+      box(4.6, 0.1, 1.95, 0xa81018, -0.4, 1.22, 13.15, false);
+      box(1.55, 1.15, 1.7, 0x0d2238, -2.15, 1.15, 13.05, false);
+      box(1.4, 0.72, 0.04, 0x88c4e6, -2.15, 1.28, 12.18, false);
+      [[-1.85, 12.3], [0.95, 12.3], [-1.85, 14.0], [0.95, 14.0]].forEach(([x, z]) => {
+        const wh = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.36, 0.28, 12), mat(0x1a1a1a));
+        wh.rotation.z = Math.PI / 2; wh.position.set(x, 0.28, z); scene.add(wh);
+      });
+      const van = label("NOEST", 1.5, 0.26, "#003060", "#fff");
+      van.position.set(0.2, 1.58, 14.16); scene.add(van);
+
+      box(1.05, 0.92, 0.42, 0x222, 11.1, 0.46, 10.55, false);
+      box(0.18, 0.42, 0.08, 0x111, 10.72, 0.42, 10.72, false);
+      box(0.18, 0.42, 0.08, 0x111, 11.48, 0.42, 10.72, false);
+
+      box(0.72, 1.05, 0.08, 0xf3efe4, 6.15, 0.72, 8.55, false);
+      const board = label("RETRAIT COLIS", 0.7, 0.22, "#a81018", "#fff");
+      board.position.set(6.15, 1.05, 8.6); scene.add(board);
+
+      box(0.95, 1.18, 0.72, 0xe6b33a, 12.55, 0.6, 3.55);
+      box(0.78, 0.48, 0.04, 0x111418, 12.55, 1.08, 3.92, false);
+      const kioskUi = label("R-___", 0.7, 0.22, "#001224", "#7CFFB2");
+      kioskUi.position.set(12.55, 1.08, 3.95); scene.add(kioskUi);
+      box(0.3, 0.06, 0.18, 0xfff6e0, 12.55, 0.78, 3.92, false);
+      const kiosk = label("PRENEZ UN TICKET", 1.05, 0.16, "#003060", "#fff");
+      kiosk.position.set(12.55, 1.38, 3.95); scene.add(kiosk);
+
+      for (let i = 0; i < 5; i++) {
+        box(0.08, 0.95, 0.08, 0x1c1c1c, 8.15 + i * 0.78, 0.48, 4.35, false);
+        if (i < 4) box(0.78, 0.035, 0.035, 0xa81018, 8.54 + i * 0.78, 0.8, 4.35, false);
+      }
+
+      CHAIRS.forEach((c) => {
+        box(0.5, 0.07, 0.48, 0x003060, c.x, 0.44, c.z, false);
+        box(0.5, 0.42, 0.07, 0x0a3f6c, c.x, 0.68, c.z - 0.2, false);
+        box(0.06, 0.42, 0.06, 0x333, c.x - 0.18, 0.21, c.z - 0.16, false);
+        box(0.06, 0.42, 0.06, 0x333, c.x + 0.18, 0.21, c.z - 0.16, false);
+        box(0.06, 0.42, 0.06, 0x333, c.x - 0.18, 0.21, c.z + 0.16, false);
+        box(0.06, 0.42, 0.06, 0x333, c.x + 0.18, 0.21, c.z + 0.16, false);
+      });
+      box(0.95, 0.08, 0.52, 0x6a4a2a, 3.85, 0.38, 3.55, false);
+      box(0.22, 0.04, 0.16, 0xc43, 3.7, 0.44, 3.5, false);
+      box(0.18, 0.03, 0.14, 0xeee, 4.0, 0.43, 3.58, false);
+      plant(1.55, 4.85, 1.2);
+      box(0.32, 0.95, 0.32, 0xdfe7ee, 13.85, 0.48, 1.15, false);
+      box(0.22, 0.08, 0.22, 0x8ec8e8, 13.85, 1.02, 1.15, false);
+      box(0.28, 0.42, 0.28, 0x2d6, 1.35, 0.22, 5.55, false);
+      box(0.22, 0.38, 0.22, 0x333, 14.55, 0.2, 5.35, false);
+      box(0.16, 0.55, 0.16, 0xa81018, 14.7, 0.28, -5.6, false);
+
+      const rules = label("Pièce d’identité  +  ticket", 2.35, 0.22, "#fff", "#003060");
+      rules.position.set(1.55, 2.18, -7.04); scene.add(rules);
+      const clock = label("08:42", 0.7, 0.22, "#111", "#fff");
+      clock.position.set(13.6, 2.35, -7.04); scene.add(clock);
+
+      tv.canvas = document.getElementById("tvHud");
+      tv.ctx = tv.canvas.getContext("2d");
+      tv.tex = new THREE.CanvasTexture(tv.canvas); tv.tex.colorSpace = THREE.SRGBColorSpace;
+      paintTv();
+      const tvMat = new THREE.MeshBasicMaterial({ map: tv.tex });
+      function hangTv(w, h, x, y, z, rotY) {
+        const bezel = box(w + 0.16, h + 0.16, 0.1, 0x111318, x, y, z, false);
+        bezel.rotation.y = rotY;
+        const screen = new THREE.Mesh(new THREE.PlaneGeometry(w, h), tvMat);
+        const fx = Math.sin(rotY) * 0.06, fz = Math.cos(rotY) * 0.06;
+        screen.position.set(x + fx, y, z + fz);
+        screen.rotation.y = rotY;
+        scene.add(screen);
+        box(0.07, 0.42, 0.07, 0x333, x - w * 0.32, y + h * 0.5 + 0.22, z, false);
+        box(0.07, 0.42, 0.07, 0x333, x + w * 0.32, y + h * 0.5 + 0.22, z, false);
+      }
+      hangTv(4.2, 1.85, 6.9, 2.22, -6.95, 0);
+      hangTv(2.35, 1.12, 14.95, 2.05, 1.15, -Math.PI / 2);
+      const tvCaption = label("ÉCRAN D’APPEL", 1.5, 0.16, "#a81018", "#fff");
+      tvCaption.position.set(4.35, 2.95, -6.92); scene.add(tvCaption);
+
+      GUICHETS.forEach((g) => {
+        box(2.35, 1.02, 0.78, 0x003060, g.x, 0.51, -5.62);
+        box(2.35, 0.06, 0.84, 0xc4b49a, g.x, 1.05, -5.62, false);
+        box(0.46, 0.3, 0.34, 0x1a1d22, g.x - 0.58, 1.24, -5.62, false);
+        box(0.4, 0.24, 0.02, 0x3a7cae, g.x - 0.58, 1.26, -5.42, false);
+        box(0.28, 0.06, 0.22, 0xddd, g.x + 0.55, 1.1, -5.4, false);
+        const gl = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.78, 0.04), glass);
+        gl.position.set(g.x + 0.12, 1.48, -5.52); scene.add(gl);
+        const n = label("GUICHET " + g.post, 1.4, 0.18, "#003060", "#fff");
+        n.position.set(g.x, 1.92, -5.18); scene.add(n);
+        const stool = box(0.36, 0.08, 0.36, 0x222, g.x, 0.58, -6.35, false);
+        box(0.08, 0.5, 0.08, 0x333, g.x, 0.28, -6.35, false);
+        stool.position.set(g.x, 0.58, -6.35);
+      });
+
+      box(1.65, 0.82, 0.78, 0x3c3c3c, -11.15, 0.41, 5.2);
+      box(0.48, 0.16, 0.38, 0xfff6e0, -11.15, 0.92, 5.05, false);
+      const pr = label("IMPRIMANTE STAFF", 1.25, 0.16, "#111", "#fff6e0");
+      pr.position.set(-11.15, 1.16, 5.62); scene.add(pr);
+
+      let si = 0;
+      for (let col = 0; col < 3; col++) {
+        for (let row = 0; row < 4; row++) {
+          const code = SHELVES[si++];
+          const x = -12.35 + col * 2.05;
+          const z = -4.7 + row * 1.72;
+          box(0.08, 2.25, 0.08, metal(), x - 0.58, 1.12, z - 0.16, false);
+          box(0.08, 2.25, 0.08, metal(), x + 0.58, 1.12, z - 0.16, false);
+          [0.52, 1.12, 1.72].forEach((y) => box(1.28, 0.05, 0.52, 0xc2a06a, x, y, z, false));
+          const tag = label(code, 0.58, 0.14, "#fff8ee", "#5a3a14");
+          tag.position.set(x, 2.1, z + 0.28); scene.add(tag);
+          const has = !!shelfStock[code];
+          const parcel = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.26, 0.32), new THREE.MeshStandardMaterial({ map: cardboard() }));
+          parcel.position.set(x, 0.7, z + 0.02); parcel.visible = has; scene.add(parcel);
+          if (!has) {
+            const extra = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.22, 0.28), new THREE.MeshStandardMaterial({ map: cardboard() }));
+            extra.position.set(x + 0.08, 1.28, z); extra.rotation.y = 0.2; scene.add(extra);
+          }
+          shelfMeshes[code] = { mesh: parcel, x, z };
+        }
+      }
+      box(1.15, 0.16, 0.95, 0x8a6230, -5.55, 0.09, -2.15, false);
+      box(0.55, 0.38, 0.42, new THREE.MeshStandardMaterial({ map: cardboard() }), -5.55, 0.36, -2.15, false);
+      const staff = label("STOCK  ·  PERSONNEL", 2.15, 0.22, "#a81018", "#fff");
+      staff.position.set(-8.7, 2.68, 7.04); staff.rotation.y = Math.PI; scene.add(staff);
+      const hallSign = label("SALLE D’ATTENTE", 2.2, 0.22, "#003060", "#fff");
+      hallSign.position.set(6.2, 2.68, 7.04); hallSign.rotation.y = Math.PI; scene.add(hallSign);
+      const doorStaff = label("ACCÈS STAFF", 0.95, 0.16, "#111", "#fff");
+      doorStaff.position.set(-2.88, 1.85, 0.35); doorStaff.rotation.y = Math.PI / 2; scene.add(doorStaff);
+
+      actors.guichet = { mesh: human({ shirt: 0xeeeeee, pants: 0x222, vest: 0x003060, name: "Samir" }), x: 6.9, z: -6.22, yaw: Math.PI, speed: 0 };
+      actors.agent = { mesh: human({ shirt: 0x222, pants: 0x333, vest: 0xc9a227, name: "Yacine" }), x: -11.05, z: 4.45, yaw: -0.25, speed: 0 };
+      place(actors.guichet); place(actors.agent);
+      CLIENTS.forEach((c, i) => {
+        actors[c.id] = {
+          mesh: human({ shirt: c.shirt, pants: c.pants, name: c.name }),
+          x: 7.4 + i * 0.85, z: 11.15, yaw: Math.PI, speed: 0, data: c, ticket: null,
+        };
+        place(actors[c.id]);
+      });
+      paintCast();
+    }
+
+    function place(a) {
+      a.mesh.position.set(a.x, 0, a.z);
+      a.mesh.rotation.y = a.yaw;
+    }
+    function paintTv(pulse) {
+      const g = tv.ctx; if (!g) return;
+      const W = tv.canvas.width, H = tv.canvas.height;
+      g.fillStyle = pulse ? "#FFE8E6" : "#F4F6F8";
+      g.fillRect(0, 0, W, H);
+      g.fillStyle = "#003060";
+      g.fillRect(0, 0, W, 72);
+      g.fillStyle = "#a81018";
+      g.fillRect(0, 72, W, 7);
+      g.fillStyle = "#fff";
+      g.font = "800 30px Sora, sans-serif";
+      g.fillText("NOEST EXPRESS  ·  STOPDESK HYDRA", 28, 46);
+      g.font = "700 22px Sora, sans-serif";
+      g.fillText("08:42", 920, 46);
+
+      const shown = state.serving || state.lastCall;
+      g.fillStyle = "#a81018";
+      g.font = "700 20px Sora, sans-serif";
+      g.fillText(state.serving ? "APPEL EN COURS" : shown ? "DERNIER APPEL" : "APPEL EN COURS", 36, 118);
+      g.fillStyle = "#a81018";
+      g.font = "italic 800 168px Barlow Condensed, sans-serif";
+      g.fillText(shown ? shown.code : "— —", 24, 290);
+      g.fillStyle = "#161616";
+      g.font = "700 38px Sora, sans-serif";
+      g.fillText(shown ? "Guichet  " + shown.post : "En attente d’un appel…", 36, 360);
+      g.fillStyle = "#445566";
+      g.font = "600 26px Sora, sans-serif";
+      g.fillText(shown ? shown.name : "Les clients regardent cet écran.", 36, 404);
+
+      g.fillStyle = "#fff";
+      g.fillRect(720, 96, 280, 388);
+      g.fillStyle = "#003060";
+      g.font = "700 18px Sora, sans-serif";
+      g.fillText("FILE D’ATTENTE", 742, 132);
+      const wait = state.tickets.filter((t) => t.status === "waiting");
+      if (!wait.length) {
+        g.fillStyle = "#8899aa";
+        g.font = "600 22px Sora, sans-serif";
+        g.fillText("File vide", 742, 190);
+      } else {
+        wait.forEach((t, i) => {
+          g.fillStyle = i === 0 ? "#a81018" : "#003060";
+          g.font = "italic 800 48px Barlow Condensed, sans-serif";
+          g.fillText(t.code, 742, 200 + i * 78);
+          g.fillStyle = "#667";
+          g.font = "600 18px Sora, sans-serif";
+          g.fillText(t.name.split(" ")[0], 742, 228 + i * 78);
+        });
+      }
+      tv.tex.needsUpdate = true;
+      const wrap = document.getElementById("tvHudWrap");
+      if (pulse) {
+        wrap.classList.add("flash");
+        clearTimeout(paintTv._t);
+        paintTv._t = setTimeout(() => wrap.classList.remove("flash"), 800);
+      }
+    }
+
+    function blocked(x, z) {
+      const r = 0.26;
+      if (x < -14.2 || x > 15.1 || z < -6.95 || z > 12.4) return true;
+      if (z > 7.1 && !(x > 7.05 && x < 9.05)) return true;
+      for (const c of colliders) {
+        if (x + r > c.minX && x - r < c.maxX && z + r > c.minZ && z - r < c.maxZ) return true;
+      }
+      return false;
+    }
+    function moveActor(a, tx, tz, dt, spd = 1.7) {
+      const dx = tx - a.x, dz = tz - a.z, d = Math.hypot(dx, dz);
+      if (d < 0.16) { a.speed = 0; a.x = tx; a.z = tz; place(a); return true; }
+      a.yaw = Math.atan2(dx, dz);
+      const step = Math.min(d, spd * (dt / 1000));
+      a.x += (dx / d) * step; a.z += (dz / d) * step; a.speed = 1;
+      place(a); return false;
+    }
+    function lookAtActor(a) {
+      if (!director || !a) return;
+      const fx = Math.sin(a.yaw), fz = Math.cos(a.yaw);
+      const sx = Math.cos(a.yaw), sz = -Math.sin(a.yaw);
+      const tx = a.x - fx * 2.7 + sx * 1.35;
+      const tz = a.z - fz * 2.7 + sz * 1.35;
+      camera.position.x += (tx - camera.position.x) * 0.085;
+      camera.position.z += (tz - camera.position.z) * 0.085;
+      camera.position.y += (1.62 - camera.position.y) * 0.08;
+      const target = new THREE.Vector3(a.x + fx * 0.45, 1.38, a.z + fz * 0.45);
+      const m = new THREE.Matrix4().lookAt(camera.position, target, new THREE.Vector3(0, 1, 0));
+      camera.quaternion.slerp(new THREE.Quaternion().setFromRotationMatrix(m), 0.1);
+      const e = new THREE.Euler().setFromQuaternion(camera.quaternion, "YXZ");
+      yaw = e.y; pitch = e.x;
+    }
+    function wait(ms) { return new Promise((r) => setTimeout(r, ms)); }
+    async function holdShot(pos, look, ms) {
+      focus = null;
+      const dest = new THREE.Vector3(pos[0], pos[1], pos[2]);
+      const target = new THREE.Vector3(look[0], look[1], look[2]);
+      const start = performance.now();
+      while (playing && performance.now() - start < ms) {
+        camera.position.lerp(dest, 0.1);
+        const m = new THREE.Matrix4().lookAt(camera.position, target, new THREE.Vector3(0, 1, 0));
+        camera.quaternion.slerp(new THREE.Quaternion().setFromRotationMatrix(m), 0.14);
+        const e = new THREE.Euler().setFromQuaternion(camera.quaternion, "YXZ");
+        yaw = e.y; pitch = e.x;
+        await wait(16);
+      }
+    }
+    async function showTv(ms = 1700) {
+      await holdShot([6.15, 1.68, 0.85], [6.9, 2.22, -6.95], ms);
+    }
+    async function walkTo(a, x, z, spd) {
+      focus = a;
+      while (playing) {
+        if (moveActor(a, x, z, 16, spd)) return;
+        await wait(16);
+      }
+    }
+    function issue(person) {
+      state.seq += 1;
+      const t = {
+        id: "t" + state.seq, code: "R-" + String(state.seq).padStart(3, "0"),
+        name: person.name, place: person.place, tracking: person.tracking, status: "waiting", post: null,
+      };
+      state.tickets.push(t);
+      paintTv(); chime(); paintCast();
+      return t;
+    }
+
+    async function runScenario() {
+      if (playing) return;
+      playing = true; director = true;
+      document.getElementById("how").hidden = true;
+      document.getElementById("playBtn").textContent = "Scénario…";
+      camera.position.set(8.05, 1.7, 13.55);
+      camera.lookAt(8.05, 1.35, 7.4);
+      say("08:42 — ouverture du stopdesk Hydra. Trois clients ce matin.");
+      paintCast();
+      await wait(1400);
+
+      for (let i = 0; i < CLIENTS.length; i++) {
+        const c = actors[CLIENTS[i].id];
+        say(c.data.name + " pousse la porte vitrée.");
+        await walkTo(c, 8.05, 6.55, 1.85);
+        await walkTo(c, 12.2, 4.15, 1.8);
+        c.ticket = issue(c.data);
+        if (c.mesh.userData.slip) c.mesh.userData.slip.visible = true;
+        say(c.data.name + " imprime " + c.ticket.code + "  ·  colis " + c.data.place);
+        toast(c.ticket.code + " imprimé");
+        await wait(650);
+        const chair = CHAIRS[i];
+        await walkTo(c, chair.x, chair.z + 0.42, 1.65);
+        c.yaw = Math.PI; c.mesh.rotation.y = Math.PI;
+        say(c.data.name + " s’assoit — ticket " + c.ticket.code);
+        paintCast();
+        await wait(420);
+      }
+
+      say("La TV de la salle d’attente affiche la file.");
+      await showTv(1400);
+
+      for (let i = 0; i < CLIENTS.length; i++) {
+        const c = actors[CLIENTS[i].id];
+        const g = GUICHETS[i % 3];
+        const ticket = c.ticket;
+        ticket.status = "serving"; ticket.post = g.post; state.serving = ticket;
+        paintTv(true); chime(); paintCast();
+        speak("Ticket " + ticket.code.replace("-", " ") + ", guichet " + g.post);
+        say("TV : " + ticket.code + "  →  Guichet " + g.post);
+        actors.guichet.x = g.x; actors.guichet.z = -6.22; place(actors.guichet);
+        await showTv(1800);
+        say(c.data.name + " se présente au guichet " + g.post);
+        await walkTo(c, g.x, -4.42, 1.8);
+        say("Yacine imprime le bon staff · place " + c.data.place);
+        await walkTo(actors.agent, -11.15, 4.85, 1.95);
+        await wait(280);
+        say("Recherche du colis " + c.data.tracking + " en " + c.data.place);
+        const sh = shelfMeshes[c.data.place];
+        await walkTo(actors.agent, sh.x, sh.z + 0.72, 1.95);
+        if (sh) sh.mesh.visible = false;
+        actors.agent.mesh.userData.parcel.visible = true;
+        toast("Colis " + c.data.place + " en main");
+        say("Yacine apporte le colis au hatch du guichet " + g.post);
+        await walkTo(actors.agent, -2.35, 1.15, 2.05);
+        await walkTo(actors.agent, g.x, -6.12, 2.0);
+        actors.agent.mesh.userData.parcel.visible = false;
+        c.mesh.userData.parcel.visible = true;
+        if (c.mesh.userData.slip) c.mesh.userData.slip.visible = false;
+        ticket.status = "done"; state.lastCall = ticket; state.serving = null; state.served += 1;
+        paintTv(); paintCast(); toast(ticket.code + " servi");
+        say("Colis remis — " + c.data.name + " sort.");
+        await wait(380);
+        await walkTo(c, 8.05, 6.7, 1.85);
+        await walkTo(c, 8.05, 11.4, 1.85);
+        c.mesh.visible = false;
+        await walkTo(actors.agent, -11.05, 4.45, 1.9);
+        await wait(280);
+      }
+
+      say("Les 3 clients ont été servis. Journée type au hub Hydra — terminée.");
+      toast("Scénario terminé · " + state.served + " colis");
+      playing = false;
+      document.getElementById("playBtn").textContent = "▶ Rejouer";
+    }
+
+    function update(dt) {
+      Object.values(actors).forEach((a) => {
+        if (!a.mesh.visible || !a.speed) return;
+        a.mesh.position.y = Math.abs(Math.sin(performance.now() / 140)) * 0.03;
+      });
+      if (director && focus) lookAtActor(focus);
+      else if (!director) {
+        let mx = 0, mz = 0;
+        if (keys.has("w") || keys.has("arrowup") || hold.z < 0) mz -= 1;
+        if (keys.has("s") || keys.has("arrowdown") || hold.z > 0) mz += 1;
+        if (keys.has("a") || keys.has("arrowleft") || hold.x < 0) mx -= 1;
+        if (keys.has("d") || keys.has("arrowright") || hold.x > 0) mx += 1;
+        const len = Math.hypot(mx, mz) || 1; mx /= len; mz /= len;
+        const speed = 3.3 * (dt / 1000);
+        const s = Math.sin(yaw), c = Math.cos(yaw);
+        const nx = camera.position.x + (mx * c + mz * s) * speed;
+        const nz = camera.position.z + (-mx * s + mz * c) * speed;
+        if (!blocked(nx, camera.position.z)) camera.position.x = nx;
+        if (!blocked(camera.position.x, nz)) camera.position.z = nz;
+        camera.position.y = 1.64;
+        camera.rotation.order = "YXZ";
+        camera.rotation.y = yaw; camera.rotation.x = pitch;
+      }
+      renderer.render(scene, camera);
+    }
+    function loop(t) {
+      const dt = Math.min(34, t - last || 16); last = t;
+      update(dt); requestAnimationFrame(loop);
+    }
+
+    buildWorld();
+    window.addEventListener("resize", () => {
+      camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+    document.addEventListener("keydown", (e) => {
+      const k = e.key.toLowerCase();
+      if (["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(k)) {
+        keys.add(k); director = false; e.preventDefault();
+      }
+    });
+    document.addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()));
+    renderer.domElement.addEventListener("pointerdown", (e) => {
+      if (!document.getElementById("how").hidden) return;
+      lookDrag = true; director = false;
+      renderer.domElement.setPointerCapture(e.pointerId);
+    });
+    renderer.domElement.addEventListener("pointerup", () => { lookDrag = false; });
+    renderer.domElement.addEventListener("pointermove", (e) => {
+      if (!lookDrag) return;
+      yaw -= e.movementX * 0.005; pitch -= e.movementY * 0.004;
+      pitch = Math.max(-1.15, Math.min(1.05, pitch));
+    });
+    document.getElementById("pad").addEventListener("pointerdown", (e) => {
+      const d = e.target.dataset.dir; if (!d) return;
+      director = false;
+      hold.x = d === "left" ? -1 : d === "right" ? 1 : 0;
+      hold.z = d === "up" ? -1 : d === "down" ? 1 : 0;
+    });
+    ["pointerup","pointerleave"].forEach((ev) => document.getElementById("pad").addEventListener(ev, () => { hold.x = 0; hold.z = 0; }));
+    document.getElementById("startBtn").addEventListener("click", runScenario);
+    document.getElementById("playBtn").addEventListener("click", () => {
+      if (playing || state.served) location.reload();
+      else runScenario();
+    });
+    document.getElementById("freeBtn").addEventListener("click", () => {
+      document.getElementById("how").hidden = true; director = false; say("Mode libre — explorez le hub.");
+    });
+    document.getElementById("helpBtn").addEventListener("click", () => { document.getElementById("how").hidden = false; });
+    document.querySelector("[data-who=free]").addEventListener("click", () => { director = false; say("Caméra libre."); });
+
+    requestAnimationFrame(loop);
+    window.NOEST3D = { runScenario, camera, actors, state };
+  </script>
+</body>
+</html>
