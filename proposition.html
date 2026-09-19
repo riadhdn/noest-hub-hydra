@@ -1,255 +1,164 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>عرض تقني — نظام طوابير ستوب ديسك نوست إكسبرس</title>
+  <title>Proposition commerciale et technique — NOEST EXPRESS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@1,800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;600;700&family=IBM+Plex+Serif:ital,wght@0,600;1,600&display=swap" rel="stylesheet" />
   <style>
     :root {
       --navy: #003060;
-      --navy-ink: #0a1c30;
       --red: #a81018;
-      --paper: #f3eee4;
-      --ticket: #fff8ee;
-      --line: #d4cbb8;
-      --mute: #5a6570;
+      --ink: #1a1f24;
+      --mute: #4b5560;
+      --line: #d5dbe0;
+      --paper: #f6f4ef;
     }
     * { box-sizing: border-box; }
-    html, body { margin: 0; background: var(--paper); color: var(--navy-ink); font-family: "Tajawal", sans-serif; }
-    body { min-height: 100vh; }
-    .sheet {
-      width: min(920px, calc(100% - 28px));
-      margin: 22px auto 48px;
-      background: var(--ticket);
-      border: 1px solid var(--line);
-      box-shadow: 0 18px 50px rgba(0, 24, 48, .12);
-      display: grid;
-      grid-template-columns: 92px 1fr;
-    }
-    .stub {
-      background: var(--navy);
-      color: #fff;
-      padding: 22px 10px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 18px;
-      border-left: 2px dashed rgba(255,255,255,.28);
-    }
-    .stub b {
-      writing-mode: vertical-rl;
-      transform: rotate(180deg);
-      font-family: "Barlow Condensed", sans-serif;
-      font-style: italic;
-      font-size: 1.7rem;
-      letter-spacing: .12em;
-    }
-    .stub span {
-      writing-mode: vertical-rl;
-      transform: rotate(180deg);
-      font-size: .78rem;
-      letter-spacing: .18em;
-      opacity: .7;
-    }
-    .hole { width: 18px; height: 18px; border-radius: 50%; background: var(--paper); }
-    main { padding: 28px 34px 40px; }
-    .kicker { color: var(--red); font-weight: 800; letter-spacing: .14em; font-size: .78rem; margin: 0 0 6px; }
-    h1 {
-      margin: 0 0 8px;
-      font-size: clamp(1.8rem, 4vw, 2.5rem);
-      line-height: 1.25;
-      color: var(--navy);
-    }
-    .lead { color: var(--mute); font-size: 1.05rem; line-height: 1.7; margin: 0 0 22px; max-width: 62ch; }
-    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
-    .actions a {
-      display: inline-block; text-decoration: none; font-weight: 800;
-      padding: 11px 16px; border-radius: 999px;
-    }
-    .actions .go { background: var(--navy); color: #fff; }
-    .actions .ghost { background: #fff; color: var(--navy); border: 1px solid var(--line); }
-    h2 {
-      margin: 28px 0 10px;
-      font-size: 1.25rem;
-      color: var(--navy);
-      padding-bottom: 6px;
-      border-bottom: 3px solid var(--red);
-      display: inline-block;
-    }
-    p, li { line-height: 1.75; }
-    p { margin: 0 0 12px; }
-    ol, ul { margin: 0 0 12px; padding-inline-start: 1.3em; }
-    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-    .card {
+    html, body { margin: 0; background: var(--paper); color: var(--ink); font-family: "IBM Plex Sans", sans-serif; }
+    .page {
+      width: min(820px, calc(100% - 32px));
+      margin: 28px auto 56px;
       background: #fff;
       border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 14px 14px 12px;
+      padding: 40px 48px 48px;
     }
-    .card strong { display: block; color: var(--navy); margin-bottom: 4px; }
-    .card small { color: var(--mute); }
-    table { width: 100%; border-collapse: collapse; font-size: .95rem; }
-    th, td { text-align: right; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-    th { color: var(--navy); font-weight: 800; }
-    .note { background: #fff; border-right: 4px solid var(--red); padding: 12px 14px; margin: 14px 0; }
-    footer { margin-top: 28px; color: var(--mute); font-size: .85rem; }
-    @media (max-width: 720px) {
-      .sheet { grid-template-columns: 1fr; }
-      .stub { flex-direction: row; border-left: 0; border-bottom: 2px dashed rgba(255,255,255,.28); padding: 12px 16px; }
-      .stub b, .stub span { writing-mode: horizontal-tb; transform: none; }
-      .hole { display: none; }
-      .grid { grid-template-columns: 1fr; }
-      main { padding: 20px 18px 32px; }
-    }
-    @media print {
-      body { background: #fff; }
-      .sheet { width: 100%; margin: 0; box-shadow: none; }
-      .actions { display: none; }
-    }
+    header { border-bottom: 3px solid var(--navy); padding-bottom: 16px; margin-bottom: 22px; }
+    .brand { font-weight: 700; letter-spacing: .14em; font-size: .72rem; color: var(--navy); text-transform: uppercase; }
+    .meta { margin: 8px 0 0; font-size: .82rem; color: var(--mute); line-height: 1.6; }
+    h1 { margin: 0 0 8px; font-family: "IBM Plex Serif", serif; font-size: 1.7rem; line-height: 1.3; color: var(--navy); }
+    .obj { margin: 0 0 22px; font-size: 1rem; color: var(--mute); }
+    h2 { margin: 26px 0 8px; font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+    p, li { line-height: 1.7; }
+    p { margin: 0 0 10px; }
+    ol, ul { margin: 0 0 10px; padding-inline-start: 1.2em; }
+    table { width: 100%; border-collapse: collapse; font-size: .92rem; margin: 8px 0 12px; }
+    th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--navy); font-weight: 700; }
+    .box { background: #f4f7fa; border-right: 3px solid var(--navy); padding: 12px 14px; margin: 12px 0 16px; }
+    .box a { color: var(--navy); font-weight: 700; word-break: break-all; }
+    .ar { direction: rtl; font-family: "IBM Plex Sans Arabic", "IBM Plex Sans", sans-serif; border-top: 1px solid var(--line); margin-top: 36px; padding-top: 8px; }
+    .ar h1 { font-family: "IBM Plex Sans Arabic", serif; }
+    .ar th, .ar td { text-align: right; }
+    footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--line); font-size: .78rem; color: var(--mute); }
+    @media (max-width: 680px) { .page { padding: 24px 18px 32px; } }
+    @media print { body { background: #fff; } .page { width: 100%; margin: 0; border: 0; } }
   </style>
 </head>
 <body>
-  <article class="sheet">
-    <aside class="stub" aria-hidden="true">
-      <i class="hole"></i>
-      <b>R-001</b>
-      <span>STOPDESK HYDRA</span>
-      <i class="hole"></i>
-      <span>NOEST EXPRESS</span>
-      <i class="hole"></i>
-    </aside>
-    <main>
-      <p class="kicker">عرض تقني وتشغيلي · سبتمبر 2026</p>
-      <h1>نظام إدارة الطوابير والسحب لمكاتب ستوب ديسك نوست إكسبرس</h1>
-      <p class="lead">
-        مقترح لتشغيل وكالة سحب الطرود كما يعيشها الزبون فعلاً: تذكرة من الآلة، انتظار أمام شاشة النداء، شباك يستدعي الرقم، ووكيل مخزون يجلب الطرد من مكانه ثم يسلّمه. المحاكاة ثلاثية الأبعاد المرفقة تعرض صباحاً كاملاً في هب حيدرة بثلاثة زبائن.
+  <article class="page">
+    <header>
+      <div class="brand">Proposition commerciale et technique</div>
+      <p class="meta">
+        Réf. PROP-NOEST-QMS-2026-09&nbsp;&nbsp;·&nbsp;&nbsp;19 septembre 2026<br />
+        Destinataire : Direction générale / Direction d’exploitation — NOEST EXPRESS<br />
+        Confidentiel — usage interne du destinataire
       </p>
-      <div class="actions">
-        <a class="go" href="index.html">مشاهدة المحاكاة ثلاثية الأبعاد</a>
-        <a class="ghost" href="#phases">خطة التركيب</a>
+    </header>
+
+    <h1>Système de gestion de file d’attente et de retrait colis pour les agences stopdesk</h1>
+    <p class="obj">Objet : proposer le déploiement d’une solution de file, d’affichage public et de préparation stock, adaptée au fonctionnement des bureaux de retrait NOEST EXPRESS.</p>
+
+    <h2>1. Objet</h2>
+    <p>La présente proposition a pour objet la fourniture, l’installation et la mise en service d’un système de gestion de file d’attente destiné aux agences de type stopdesk. Elle couvre le parcours client, le poste guichet, l’écran d’appel, le bon de préparation stock et l’administration quotidienne.</p>
+
+    <h2>2. Constat</h2>
+    <p>Aux heures de forte affluence, l’accueil au comptoir, l’appel au nom et la recherche manuelle du colis se superposent. Il en résulte un allongement du temps d’attente, des erreurs de remise et une perte de lisibilité pour le client comme pour l’équipe.</p>
+    <p>Le besoin n’est pas un simple distributeur de tickets. Il s’agit de relier, dans un même flux, le numéro de file, le numéro de suivi et l’emplacement de stockage, afin que la préparation du colis commence dès l’appel, et non au moment où le client est déjà au guichet.</p>
+
+    <h2>3. Objectifs</h2>
+    <ul>
+      <li>Instaurer un ordre d’appel unique, visible de toute la salle d’attente.</li>
+      <li>Réduire le temps de recherche en stock par l’impression d’un bon personnel (suivi + emplacement).</li>
+      <li>Permettre plusieurs guichets simultanés sans mélange des numéros.</li>
+      <li>Assurer un fonctionnement local de l’agence, y compris en cas d’interruption temporaire du réseau.</li>
+      <li>Disposer d’une interface en arabe, français et anglais.</li>
+    </ul>
+
+    <h2>4. Périmètre fonctionnel</h2>
+    <table>
+      <thead><tr><th>Module</th><th>Fonctions livrées</th></tr></thead>
+      <tbody>
+        <tr><td>Borne client</td><td>Émission du ticket, horodatage, code QR, option de masquage du suivi et de l’emplacement sur le ticket client.</td></tr>
+        <tr><td>Poste guichet</td><td>Appel du suivant, rappel, clôture, passage. Postes indépendants (guichet 1, 2, 3…).</td></tr>
+        <tr><td>Affichage public</td><td>Écran de salle : numéro en cours, guichet concerné, file d’attente, bandeau d’information.</td></tr>
+        <tr><td>Stock</td><td>Bon staff portant le suivi et la place (ex. B-02), destiné à l’agent de préparation.</td></tr>
+        <tr><td>Administration</td><td>Compteur journalier, gestion des postes, priorités, import des colis, paramétrage linguistique.</td></tr>
+        <tr><td>Licences</td><td>Activation par poste. Exploitation locale (application de bureau + base embarquée).</td></tr>
+      </tbody>
+    </table>
+
+    <h2>5. Principe de fonctionnement</h2>
+    <ol>
+      <li>Le client obtient un ticket à la borne et attend en salle.</li>
+      <li>L’écran public affiche le numéro appelé et le guichet.</li>
+      <li>L’agent de stock reçoit le bon de préparation et retire le colis à l’emplacement indiqué.</li>
+      <li>Le colis est déposé au hatch ; le guichet clôture le ticket ; le client quitte l’agence.</li>
+    </ol>
+
+    <h2>6. Démonstrateur</h2>
+    <p>Un démonstrateur du parcours agence est mis à disposition afin de permettre à la direction d’examiner le flux avant toute décision d’installation. Il présente une salle type (borne, file, écran, trois guichets, stock) et un fonctionnement continu.</p>
+    <div class="box">
+      Démonstrateur opérationnel :<br />
+      <a href="https://riadhdn.github.io/noest-hub-hydra/">https://riadhdn.github.io/noest-hub-hydra/</a>
+    </div>
+    <p>Ce démonstrateur illustre le principe. Il ne constitue pas le logiciel de production, lequel reste l’application de bureau déjà développée pour l’exploitation quotidienne.</p>
+
+    <h2>7. Conditions de mise en œuvre</h2>
+    <p>Chaque agence devra disposer, au minimum, d’un poste borne avec imprimante thermique, d’un poste par guichet, d’un écran d’affichage en salle, et d’un étiquetage des emplacements de stock conforme à la nomenclature retenue (A-01, B-02, etc.). Le matériel existant pourra être réemployé après visite.</p>
+
+    <h2>8. Planning prévisionnel — agence pilote</h2>
+    <table>
+      <thead><tr><th>Phase</th><th>Durée</th><th>Livrable</th></tr></thead>
+      <tbody>
+        <tr><td>Audit d’agence</td><td>1 jour</td><td>Relevé des postes, de l’écran, des imprimantes et du circuit stock</td></tr>
+        <tr><td>Préparation</td><td>2 à 3 jours</td><td>Paramétrage, licences, import d’une première base colis</td></tr>
+        <tr><td>Installation</td><td>0,5 jour</td><td>Mise en service et tests d’impression</td></tr>
+        <tr><td>Formation</td><td>0,5 jour</td><td>Guichet, stock, affichage, administration</td></tr>
+        <tr><td>Accompagnement</td><td>5 jours ouvrés</td><td>Ajustements d’exploitation</td></tr>
+      </tbody>
+    </table>
+    <p>L’extension au réseau intervient après validation de l’agence pilote par le destinataire.</p>
+
+    <h2>9. Modalités commerciales</h2>
+    <p>L’offre est présentée en trois postes distincts, sans mélange entre logiciel et matériel :</p>
+    <ol>
+      <li>licence d’exploitation par agence et par poste, selon la formule retenue (périodique ou perpétuelle) ;</li>
+      <li>prestations d’installation, de paramétrage et de formation sur site ;</li>
+      <li>fourniture éventuelle de matériel, uniquement si l’agence ne dispose pas des équipements requis.</li>
+    </ol>
+    <p>Le montant définitif est établi après l’audit d’agence (nombre de guichets et volume journalier). La présente note fixe le cadre ; elle ne constitue pas un bon de commande.</p>
+
+    <h2>10. Suite proposée</h2>
+    <p>Il est proposé de convenir d’une réunion de présentation, puis de désigner une agence pilote. À l’issue de la semaine d’accompagnement, un compte rendu d’exploitation sera remis afin de décider de la généralisation.</p>
+    <p>Nous restons à votre disposition pour toute précision.</p>
+    <p>Veuillez agréer, Madame, Monsieur, l’expression de nos salutations distinguées.</p>
+
+    <div class="ar">
+      <p class="brand">عرض تجاري وتقني</p>
+      <h1>نظام إدارة الطوابير وسحب الطرود لوكالات ستوب ديسك نوست إكسبرس</h1>
+      <p class="obj">المرجع: PROP-NOEST-QMS-2026-09 — 19 سبتمبر 2026 — موجّه إلى الإدارة العامة / إدارة الاستغلال — وثيقة سرية.</p>
+      <h2>الغرض</h2>
+      <p>تتعلق هذه الوثيقة بتوريد وتركيب وتشغيل نظام طوابير لمكاتب السحب: تذكرة الزبون، شاشة النداء، الشباك، إذن تحضير المخزون، والإدارة اليومية.</p>
+      <h2>التشخيص</h2>
+      <p>في أوقات الذروة يتداخل الاستقبال عند الشباك مع المناداة بالاسم والبحث اليدوي عن الطرد. المطلوب ليس موزّع أرقام فقط، بل ربط رقم الملف برقم التتبع وبمكان الرف، حتى يبدأ التحضير عند النداء لا عند وصول الزبون إلى الشباك.</p>
+      <h2>النطاق</h2>
+      <p>آلة التذاكر · منصب الشباك (نداء، إعادة، إنهاء، تخطٍ) · شاشة القاعة · إذن الموظفين (التتبع + المكان) · الإدارة والتراخيص · تشغيل محلي للوكالة · واجهة بالعربية والفرنسية والإنجليزية.</p>
+      <h2>المُجسِّم</h2>
+      <div class="box">
+        مجسّم مسار الوكالة:<br />
+        <a href="https://riadhdn.github.io/noest-hub-hydra/">https://riadhdn.github.io/noest-hub-hydra/</a>
       </div>
+      <p>هذا المجسّم يوضح المبدأ. برنامج الإنتاج هو تطبيق المكتب المعدّ للاستغلال اليومي.</p>
+      <h2>التنفيذ</h2>
+      <p>وكالة تجريبية: معاينة يوم، تجهيز يومين إلى ثلاثة، تركيب نصف يوم، تكوين نصف يوم، مرافقة خمسة أيام عمل. التعميم على الشبكة بعد مصادقة الجهة المستفيدة. السعر النهائي بعد المعاينة، على ثلاثة بنود منفصلة: الرخصة، التركيب والتكوين، والأجهزة عند الحاجة.</p>
+      <p>وتفضلوا بقبول فائق الاحترام.</p>
+    </div>
 
-      <h2>لماذا هذا النظام الآن</h2>
-      <p>
-        مكاتب السحب في الجزائر — ستوب ديسك نوست، ياليدين وغيرها — تتحوّل في ساعات الذروة إلى ازدحام عند الشباك، مناداة بالاسم، وبحث يدوي عن الطرد. النتيجة: طوابير طويلة، خطأ في التسليم، وزبون لا يعرف هل جاء دوره أم لا.
-      </p>
-      <p>
-        النظام المقترح يفصل الأدوار داخل الوكالة الواحدة، ويربط التذكرة بالتتبع وبرقم الرف، حتى لا يبقى البحث في المخزون عشوائياً.
-      </p>
-
-      <h2>رحلة الصباح — كما في المحاكاة</h2>
-      <p>ثلاثة زبائن حقيقيو الأسماء في سيناريو هب حيدرة:</p>
-      <ol>
-        <li><strong>كريم بن علي</strong> يدخل من الواجهة الزجاجية، يطبع <b>R-001</b> للطرد في الرف <b>B-02</b>، ثم يجلس.</li>
-        <li><strong>أميرة سعدي</strong> تطبع <b>R-002</b> · مكان <b>A-03</b>.</li>
-        <li><strong>نادية شريف</strong> تطبع <b>R-003</b> · مكان <b>C-01</b>.</li>
-        <li>شاشة الانتظار تعرض الملف ثم تنادي: <b>R-001 → الشباك 1</b>.</li>
-        <li>الوكيل ياسين يطبع إذن الموظفين، يأخذ الطرد من الرف، ويمرّره عبر فتحة الشباك.</li>
-        <li>كريم يخرج بالطرد. تتكرر السلسلة لأميرة ثم نادية حتى تُغلق «اليوم النموذجي».</li>
-      </ol>
-      <p class="note">هذا ليس عرضاً تسويقياً فارغاً: كل خطوة موجودة أصلاً في تطبيق نوست إكسبرس (آلة التذاكر، الشباك، شاشة النداء، المخزون، الإدارة).</p>
-
-      <h2>الوحدات الخمس</h2>
-      <div class="grid">
-        <div class="card">
-          <strong>1. آلة التذاكر — الزبون</strong>
-          <small>الزبون يدخل رقم الهاتف أو يطلب تذكرة. تُطبع تذكرة بشعار نوست، رقم تسلسلي، وقت، ورمز QR. يمكن إخفاء التتبع ومكان الرف عن الزبون وإظهارهما فقط لفريق المخزون.</small>
-        </div>
-        <div class="card">
-          <strong>2. الشباك — العون</strong>
-          <small>نداء التالي، إعادة النداء، إنهاء، أو تخطّي. كل شباك مستقل (1، 2، 3…) والصوت ينادي الرقم بالعربية أو الفرنسية.</small>
-        </div>
-        <div class="card">
-          <strong>3. شاشة القاعة — التلفزيون</strong>
-          <small>عرض كبير: الرقم الجاري، رقم الشباك، الملف المنتظر، وشريط إعلانات. هذا ما يراه الجالسون في المحاكاة فوق الشبابيك.</small>
-        </div>
-        <div class="card">
-          <strong>4. المخزون — وكيل الرفوف</strong>
-          <small>تذكرة موظفين تحمل رقم التتبع ومكان الرف (A-03، B-02…). الوكيل يذهب إلى الرف ويجلب الطرد قبل التسليم، لا بعد سؤال الزبون.</small>
-        </div>
-        <div class="card">
-          <strong>5. الإدارة والرقابة</strong>
-          <small>تصفير العداد اليومي، إدارة الشبابيك، أنواع التذاكر وأولوياتها، شرائح الشاشة، استيراد الطرود من إكسل، واللغة: عربي / فرنسي / إنجليزي.</small>
-        </div>
-        <div class="card">
-          <strong>الترخيص والتشغيل</strong>
-          <small>التطبيق يُفتح بمفتاح تفعيل لكل جهاز. يعمل محلياً (إلكترون + قاعدة خفيفة) حتى لا تتوقف الوكالة إذا انقطع الإنترنت لدقائق.</small>
-        </div>
-      </div>
-
-      <h2>القيمة للوكالة</h2>
-      <ul>
-        <li>ترتيب واضح بدل المناداة العشوائية بالاسم.</li>
-        <li>تقليل وقت البحث في المخزون: المكان مطبوع قبل أن يصل الزبون إلى الشباك.</li>
-        <li>شاشة واحدة يثق بها الجميع — لا حاجة لأن يقف الزبون فوق العون.</li>
-        <li>عدة شبابيك في نفس القاعة دون اختلاط الأرقام.</li>
-        <li>واجهة عربية كاملة من اليمين لليسار، جاهزة لزبون الستوب ديسك الجزائري.</li>
-      </ul>
-
-      <h2 id="phases">مراحل التركيب المقترحة</h2>
-      <table>
-        <thead>
-          <tr><th>المرحلة</th><th>المدة التقريبية</th><th>المخرج</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>معاينة الوكالة</td>
-            <td>يوم واحد</td>
-            <td>عدد الشبابيك، موضع الشاشة، الطابعة، مسار المخزون</td>
-          </tr>
-          <tr>
-            <td>تجهيز الأجهزة</td>
-            <td>2–3 أيام</td>
-            <td>حاسوب الآلة، حواسيب الشبابيك، تلفزيون النداء، طابعتا حرارية</td>
-          </tr>
-          <tr>
-            <td>التثبيت والتفعيل</td>
-            <td>نصف يوم</td>
-            <td>مفاتيح الترخيص، اختبار الطباعة، استيراد دفعة طرود</td>
-          </tr>
-          <tr>
-            <td>تكوين الفريق</td>
-            <td>نصف يوم</td>
-            <td>عون الشباك، وكيل المخزون، مشغّل الشاشة</td>
-          </tr>
-          <tr>
-            <td>أسبوع مرافقة</td>
-            <td>5 أيام عمل</td>
-            <td>ضبط العداد، الأولويات، وأعطال الطباعة الأولى</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h2>ما تحتاجه كل وكالة</h2>
-      <ul>
-        <li>جهاز لآلة التذاكر (شاشة لمس إن أمكن) + طابعة حرارية 80 مم.</li>
-        <li>جهاز لكل شباك + طابعة صغيرة لإذن المخزون.</li>
-        <li>تلفزيون في قاعة الانتظار مربوط بجهاز الشاشة.</li>
-        <li>ترقيم أرفف المخزون بنفس صيغة الأماكن (A-01 … C-04).</li>
-      </ul>
-
-      <h2>صيغة العرض التجاري</h2>
-      <p>نقترح فصل السعر إلى ثلاثة بنود واضحة، دون خلط الرخصة بالأجهزة:</p>
-      <ol>
-        <li><strong>رخصة تشغيل لكل وكالة / لكل جهاز</strong> — تفعيل سنوي أو دائم حسب الاتفاق.</li>
-        <li><strong>تركيب وتكوين في الموقع</strong> — يوم الإطلاق + أسبوع المرافقة.</li>
-        <li><strong>أجهزة اختيارية</strong> — إن لم تتوفر الطابعات أو التلفزيون لدى الوكالة.</li>
-      </ol>
-      <p class="note">الأرقام النهائية تُحدَّد بعد معاينة الوكالة (عدد الشبابيك وحجم الملف اليومي). هذه الوثيقة تثبت الشكل التشغيلي لا جدول أسعار مغلق.</p>
-
-      <h2>دعوة للتجربة</h2>
-      <p>
-        افتحوا المحاكاة ثلاثية الأبعاد: ثلاثة زبائن، تذكرة، نداء على الشاشة، جلب من المخزون، تسليم، خروج. إن وافق هذا التدفق عمل وكالاتكم، ننتقل إلى تركيب تجريبي على وكالة واحدة (حيدرة أو أي ستوب ديسك مرجعي) ثم التعميم على الشبكة.
-      </p>
-      <div class="actions">
-        <a class="go" href="index.html">تشغيل محاكاة هب حيدرة</a>
-      </div>
-      <footer>
-        نوست إكسبرس · نظام الطوابير والسحب · وثيقة عرض داخلية قابلة للطباعة · المحاكاة مرفقة في نفس الرابط
-      </footer>
-    </main>
+    <footer>
+      PROP-NOEST-QMS-2026-09 · NOEST EXPRESS — file d’attente et retrait stopdesk · Document de proposition · Ne vaut pas bon de commande
+    </footer>
   </article>
 </body>
 </html>
