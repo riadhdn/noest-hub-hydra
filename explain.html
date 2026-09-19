@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>How NOEST stopdesk works</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@1,800&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy: #003060;
+      --red: #a81018;
+      --paper: #fff4e4;
+      --ink: #f4f1ea;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #071018; color: var(--ink); font-family: Sora, sans-serif; }
+    .stage { position: fixed; inset: 0; }
+    .scene {
+      position: absolute; inset: 0; opacity: 0; pointer-events: none;
+      transition: opacity .7s ease;
+    }
+    .scene.on { opacity: 1; pointer-events: auto; }
+    .scene img {
+      position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+      transform: scale(1.08); animation: ken 9s ease-out forwards;
+    }
+    @keyframes ken { to { transform: scale(1); } }
+    .veil {
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(7,16,24,.25) 0%, rgba(7,16,24,.2) 40%, rgba(7,16,24,.88) 100%);
+    }
+    .copy {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      padding: 0 7vw 92px;
+      max-width: 920px;
+    }
+    .copy small {
+      display: inline-block; color: #ff8b8b; letter-spacing: .18em;
+      text-transform: uppercase; font-size: .68rem; font-weight: 700; margin-bottom: 8px;
+    }
+    .copy h1, .copy h2 {
+      margin: 0 0 10px; font-family: "Barlow Condensed", sans-serif;
+      font-style: italic; font-weight: 800; line-height: .95;
+      font-size: clamp(2.4rem, 6vw, 4.4rem);
+    }
+    .copy p { margin: 0; font-size: clamp(1rem, 2vw, 1.2rem); line-height: 1.5; max-width: 42ch; color: #e4e0d6; }
+    .ticket {
+      position: absolute; top: 28px; right: 28px;
+      background: var(--paper); color: var(--navy); padding: 10px 14px 12px;
+      transform: rotate(4deg); box-shadow: 0 12px 30px rgba(0,0,0,.35);
+      animation: stamp .6s cubic-bezier(.2,1.4,.3,1) both;
+    }
+    @keyframes stamp { from { transform: rotate(12deg) scale(1.3); opacity: 0; } }
+    .ticket b { display: block; font-family: "Barlow Condensed", sans-serif; font-style: italic; font-size: 2rem; line-height: 1; }
+    .ticket span { font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; }
+    .bar { position: absolute; left: 0; right: 0; top: 0; height: 4px; background: #1c2a36; }
+    .bar i { display: block; height: 100%; width: 0; background: var(--red); }
+    .hud {
+      position: absolute; left: 22px; right: 22px; bottom: 18px;
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    }
+    .dots { display: flex; gap: 6px; flex-wrap: wrap; }
+    .dots button {
+      width: 8px; height: 8px; border: 0; border-radius: 50%; background: #4a5a66; cursor: pointer; padding: 0;
+    }
+    .dots button.on { background: #fff; }
+    .ctrls { display: flex; gap: 8px; }
+    .ctrls button {
+      border: 0; border-radius: 999px; padding: 9px 14px; font: inherit; font-weight: 700;
+      background: rgba(255,255,255,.12); color: #fff; cursor: pointer;
+    }
+    .ctrls button.play { background: var(--red); }
+    button:focus-visible { outline: 3px solid #7ec2ff; outline-offset: 2px; }
+    .brand { position: absolute; top: 22px; left: 22px; font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; opacity: .8; }
+    @media (prefers-reduced-motion: reduce) {
+      .scene img { animation: none; }
+      .ticket { animation: none; }
+      .scene { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage" id="stage">
+    <div class="bar"><i id="prog"></i></div>
+    <div class="brand">NOEST EXPRESS · stopdesk</div>
+    <div class="ticket" aria-hidden="true"><span>Now following</span><b id="ticket">R-014</b></div>
+    <div id="scenes"></div>
+    <div class="hud">
+      <div class="dots" id="dots"></div>
+      <div class="ctrls">
+        <button type="button" id="prev">Back</button>
+        <button type="button" class="play" id="toggle">Pause</button>
+        <button type="button" id="next">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SCENES = [
+      {
+        img: "pdf/img/noest-agence.png",
+        k: "The agency",
+        t: "One number. One line.",
+        p: "NOEST stopdesk organizes pickup: ticket, waiting screen, counter, then stock. This film walks the full path.",
+        code: "R-014"
+      },
+      {
+        img: "pdf/img/step-01-enter.png",
+        k: "Step 1",
+        t: "The client walks in.",
+        p: "No crowd at the glass. The kiosk, chairs, and the call screen are already visible from the door.",
+        code: "—"
+      },
+      {
+        img: "pdf/img/step-02-kiosk.png",
+        k: "Step 2",
+        t: "Take a ticket.",
+        p: "Print at the kiosk, or type a phone number so the system finds the parcel.",
+        code: "…"
+      },
+      {
+        img: "pdf/img/noest-kiosk.png",
+        k: "Staff kiosk",
+        t: "The agent can print it too.",
+        p: "Type, tracking, and shelf place go on the ticket. The client copy can hide the shelf. Staff still see it.",
+        code: "R-014"
+      },
+      {
+        img: "pdf/img/noest-client.png",
+        k: "Client kiosk",
+        t: "Self-service by phone.",
+        p: "Ten digits. If a parcel is ready, the ticket prints. If not, the screen says so.",
+        code: "R-014"
+      },
+      {
+        img: "pdf/img/step-03-ticket.png",
+        k: "Step 3",
+        t: "The paper is the turn.",
+        p: "R-014 and a QR code. That number is the only thing the client needs until the screen calls it.",
+        code: "R-014"
+      },
+      {
+        img: "pdf/img/step-04-wait.png",
+        k: "Step 4",
+        t: "Sit. Watch the wall.",
+        p: "Nobody stands over the clerk. The television is the queue.",
+        code: "R-014"
+      },
+      {
+        img: "pdf/img/noest-tv.png",
+        k: "Public screen",
+        t: "The hall sees the call.",
+        p: "Now serving, which counter, and who is next. When a number is called, the screen flashes and a voice reads it.",
+        code: "R-014"
+      },
+      {
+        img: "pdf/img/step-05-guichet.png",
+        k: "Step 5",
+        t: "Go to that counter only.",
+        p: "The ticket matches the screen. The client walks to Guichet 1 — not a random window.",
+        code: "R-014"
+      },
+      {
+        img: "pdf/img/noest-guichet.png",
+        k: "Counter desk",
+        t: "Call, recall, finish, skip.",
+        p: "Each clerk runs an independent post. Several windows can work at once without mixing numbers.",
+        code: "R-014"
+      },
+      {
+        img: "pdf/img/step-06-stock.png",
+        k: "Step 6",
+        t: "Stock fetches the box.",
+        p: "A staff slip shows tracking and place — B-02. The parcel is picked before the handshake, not after.",
+        code: "B-02"
+      },
+      {
+        img: "pdf/img/noest-stock.png",
+        k: "Staff slip",
+        t: "The shelf is printed, not guessed.",
+        p: "Ticket R-014, tracking NE240918001, place B-02. The picker walks to one bay.",
+        code: "B-02"
+      },
+      {
+        img: "pdf/img/step-07-handover.png",
+        k: "Step 7",
+        t: "Hand-over at the hatch.",
+        p: "The box meets the ticket. The clerk closes the number.",
+        code: "R-014"
+      },
+      {
+        img: "pdf/img/step-08-exit.png",
+        k: "Step 8",
+        t: "The client leaves.",
+        p: "The next ticket is already on the wall. The line never restarts from names shouted across the room.",
+        code: "R-015"
+      },
+      {
+        img: "pdf/img/noest-login.png",
+        k: "Access",
+        t: "Each station has a login.",
+        p: "Kiosk, counter, screen, or admin. Arabic, French, or English. The agency keeps running if the internet drops for a moment.",
+        code: "—"
+      },
+      {
+        img: "pdf/img/noest-launcher.png",
+        k: "Roles",
+        t: "Five doors. One system.",
+        p: "Tickets, client kiosk, call desk, hall screen, control room. Staff open only the job they do.",
+        code: "—"
+      },
+      {
+        img: "pdf/img/noest-admin.png",
+        k: "Admin",
+        t: "The day, in numbers.",
+        p: "Waiting, serving, done, last ticket. Reset the daily counter. Import parcels. Manage windows.",
+        code: "—"
+      },
+      {
+        img: "pdf/img/noest-agence.png",
+        k: "In short",
+        t: "Ticket. Screen. Shelf. Door.",
+        p: "That is the whole stopdesk. Licensed install and training — not a free trial. A visit sets the price.",
+        code: "R-014"
+      }
+    ];
+
+    const scenesEl = document.getElementById("scenes");
+    const dotsEl = document.getElementById("dots");
+    const prog = document.getElementById("prog");
+    const ticket = document.getElementById("ticket");
+    const toggle = document.getElementById("toggle");
+    let i = 0, playing = true, started = 0, timer = null;
+    const HOLD = 6200;
+
+    SCENES.forEach((s, n) => {
+      const el = document.createElement("section");
+      el.className = "scene" + (n === 0 ? " on" : "");
+      el.innerHTML = `<img src="${s.img}" alt="">
+        <div class="veil"></div>
+        <div class="copy"><small>${s.k}</small><h2>${s.t}</h2><p>${s.p}</p></div>`;
+      scenesEl.appendChild(el);
+      const b = document.createElement("button");
+      b.type = "button";
+      b.setAttribute("aria-label", "Scene " + (n + 1));
+      if (n === 0) b.className = "on";
+      b.addEventListener("click", () => go(n, true));
+      dotsEl.appendChild(b);
+    });
+
+    function go(n, user) {
+      i = (n + SCENES.length) % SCENES.length;
+      [...scenesEl.children].forEach((el, k) => el.classList.toggle("on", k === i));
+      [...dotsEl.children].forEach((el, k) => el.classList.toggle("on", k === i));
+      ticket.textContent = SCENES[i].code;
+      ticket.style.animation = "none";
+      void ticket.offsetWidth;
+      ticket.style.animation = "";
+      const img = scenesEl.children[i].querySelector("img");
+      img.style.animation = "none";
+      void img.offsetWidth;
+      img.style.animation = "";
+      started = performance.now();
+      if (user) { playing = true; toggle.textContent = "Pause"; }
+    }
+    function tick(now) {
+      if (!started) started = now;
+      const p = playing ? Math.min(1, (now - started) / HOLD) : (now - started) / HOLD;
+      prog.style.width = (Math.max(0, Math.min(1, p)) * 100) + "%";
+      if (playing && p >= 1) go(i + 1);
+      requestAnimationFrame(tick);
+    }
+    document.getElementById("prev").onclick = () => go(i - 1, true);
+    document.getElementById("next").onclick = () => go(i + 1, true);
+    toggle.onclick = () => {
+      playing = !playing;
+      toggle.textContent = playing ? "Pause" : "Play";
+      if (playing) started = performance.now() - (parseFloat(prog.style.width) || 0) / 100 * HOLD;
+    };
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); go(i + 1, true); }
+      if (e.key === "ArrowLeft") go(i - 1, true);
+    });
+    requestAnimationFrame(tick);
+  </script>
+</body>
+</html>
